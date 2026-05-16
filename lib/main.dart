@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   runApp(const CrimsonTapperApp());
@@ -13,107 +13,93 @@ class CrimsonTapperApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Crimson Tapper',
-      debugShowCheckedModeBanner: false,
       theme: ThemeData.dark().copyWith(
-        primaryColor: Colors.red,
         scaffoldBackgroundColor: const Color(0xFF111111),
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Colors.black,
-          foregroundColor: Colors.red,
-        ),
-        textTheme: const TextTheme(
-          bodyMedium: TextStyle(color: Colors.white),
-        ),
+        primaryColor: const Color(0xFFFF0000),
+        colorScheme: const ColorScheme.dark(primary: Color(0xFFFF0000)),
       ),
-      home: const HomeScreen(),
+      home: const GameScreen(),
+      debugShowCheckedModeBanner: false,
     );
   }
 }
 
-class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+class GameScreen extends StatefulWidget {
+  const GameScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  State<GameScreen> createState() => _GameScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
-  int score = 0;
-  int multiplier = 1;
-  int autoTapRate = 0;
-  bool isPremium = false;
+class _GameScreenState extends State<GameScreen> {
+  double power = 0;
+  double tapMultiplier = 1;
+  int autoTappers = 0;
+  double autoPower = 0;
   int highScore = 0;
-  Timer? autoTimer;
-  List<Map<String, dynamic>> upgrades = [
-    {'name': 'Double Tap', 'cost': 50, 'bought': false},
-    {'name': 'Auto Tapper', 'cost': 100, 'bought': false},
-  ];
+
+  Timer? _timer;
 
   @override
   void initState() {
     super.initState();
     _loadData();
-    autoTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (autoTapRate > 0) {
-        setState(() {
-          score += autoTapRate * (isPremium ? 2 : 1);
-        });
-      }
-    });
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) => _autoGenerate());
   }
 
   Future<void> _loadData() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
-      score = prefs.getInt('score') ?? 0;
+      power = prefs.getDouble('power') ?? 0;
+      tapMultiplier = prefs.getDouble('tapMultiplier') ?? 1;
+      autoTappers = prefs.getInt('autoTappers') ?? 0;
+      autoPower = prefs.getDouble('autoPower') ?? 0;
       highScore = prefs.getInt('highScore') ?? 0;
-      isPremium = prefs.getBool('premium') ?? false;
     });
   }
 
   Future<void> _saveData() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt('score', score);
-    if (score > highScore) {
-      highScore = score;
-      await prefs.setInt('highScore', highScore);
-    }
-    await prefs.setBool('premium', isPremium);
+    prefs.setDouble('power', power);
+    prefs.setDouble('tapMultiplier', tapMultiplier);
+    prefs.setInt('autoTappers', autoTappers);
+    prefs.setDouble('autoPower', autoPower);
+    prefs.setInt('highScore', highScore);
   }
 
-  void tapOrb() {
+  void _tap() {
     setState(() {
-      score += multiplier * (isPremium ? 2 : 1);
+      power += 1 * tapMultiplier;
+      if (power > highScore) highScore = power.toInt();
     });
     _saveData();
   }
 
-  void buyUpgrade(int index) {
-    final upgrade = upgrades[index];
-    if (score >= upgrade['cost'] && !upgrade['bought']) {
-      setState(() {
-        score -= upgrade['cost'] as int;
-        upgrade['bought'] = true;
-        if (index == 0) multiplier = 2;
-        if (index == 1) autoTapRate = 5;
-      });
-      _saveData();
-    }
-  }
-
-  void buyPremium() {
+  void _autoGenerate() {
     setState(() {
-      isPremium = true;
+      power += autoPower;
+      if (power > highScore) highScore = power.toInt();
     });
     _saveData();
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Premium unlocked! (Demo - Monthly sub simulated)')),
-    );
+  }
+
+  void _buyUpgrade(String type) {
+    setState(() {
+      if (type == 'multi' && power >= 50) {
+        power -= 50;
+        tapMultiplier += 0.5;
+      } else if (type == 'auto' && power >= 100) {
+        power -= 100;
+        autoTappers++;
+        autoPower += 0.5;
+      }
+    });
+    _saveData();
   }
 
   @override
   void dispose() {
-    autoTimer?.cancel();
+    _timer?.cancel();
     super.dispose();
   }
 
@@ -121,82 +107,56 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Crimson Tapper'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.monetization_on, color: Colors.red),
-            onPressed: buyPremium,
-          ),
-        ],
+        title: const Text('CRIMSON TAPPER', style: TextStyle(color: Color(0xFFFF0000), fontWeight: FontWeight.bold)),
+        backgroundColor: Colors.black,
+        actions: [Text('High: $highScore', style: const TextStyle(color: Colors.white))],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
+      body: Center(
         child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(
-              'Power: $score',
-              style: const TextStyle(fontSize: 32, color: Colors.red, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 10),
-            Text('High Score: $highScore', style: const TextStyle(color: Colors.white70)),
-            const SizedBox(height: 40),
             GestureDetector(
-              onTap: tapOrb,
+              onTap: _tap,
               child: Container(
                 width: 200,
                 height: 200,
                 decoration: BoxDecoration(
+                  color: const Color(0xFFFF0000),
                   shape: BoxShape.circle,
-                  color: Colors.red,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.red.withOpacity(0.5),
-                      blurRadius: 20,
-                      spreadRadius: 5,
-                    ),
-                  ],
+                  boxShadow: [BoxShadow(color: Colors.red.withOpacity(0.5), blurRadius: 30, spreadRadius: 10)],
                 ),
-                child: const Center(
-                  child: Text(
-                    'TAP',
-                    style: TextStyle(
-                      color: Colors.black,
-                      fontSize: 40,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
+                child: const Center(child: Text('TAP', style: TextStyle(fontSize: 40, color: Colors.black, fontWeight: FontWeight.bold))),
               ),
             ),
             const SizedBox(height: 40),
-            const Text('Upgrades', style: TextStyle(fontSize: 24, color: Colors.red)),
-            Expanded(
-              child: ListView.builder(
-                itemCount: upgrades.length,
-                itemBuilder: (context, index) {
-                  final upgrade = upgrades[index];
-                  return ListTile(
-                    title: Text(upgrade['name'] as String, style: const TextStyle(color: Colors.white)),
-                    subtitle: Text('Cost: ${upgrade['cost']} Power', style: const TextStyle(color: Colors.white70)),
-                    trailing: upgrade['bought'] as bool
-                        ? const Icon(Icons.check, color: Colors.green)
-                        : ElevatedButton(
-                            onPressed: () => buyUpgrade(index),
-                            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                            child: const Text('Buy'),
-                          ),
-                  );
-                },
-              ),
+            Text('Power: ${power.toStringAsFixed(1)}', style: const TextStyle(fontSize: 32, color: Color(0xFFFF0000))),
+            const SizedBox(height: 20),
+            Text('Tap Multi: x${tapMultiplier.toStringAsFixed(1)} | Auto: $autoTappers', style: const TextStyle(fontSize: 18)),
+            const SizedBox(height: 40),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                ElevatedButton(
+                  onPressed: () => _buyUpgrade('multi'),
+                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFF0000)),
+                  child: const Text('Upgrade Tap (50)'),
+                ),
+                ElevatedButton(
+                  onPressed: () => _buyUpgrade('auto'),
+                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFF0000)),
+                  child: const Text('Buy Auto (100)'),
+                ),
+              ],
             ),
-            if (!isPremium)
-              ElevatedButton(
-                onPressed: buyPremium,
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                child: const Text('Unlock Premium (Monthly Sub - Demo)'),
-              )
-            else
-              const Text('Premium Active - x2 Power!', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () {
+                // Simulate IAP
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Premium Unlocked! (In real app: add IAP)')));
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+              child: const Text('Unlock Premium (Monthly)'),
+            ),
           ],
         ),
       ),
