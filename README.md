@@ -1,23 +1,13 @@
 # Crimson Tapper
 
-## Black/Red Themed Idle Tapper Game
+Black/Red themed idle clicker game built with Flutter.
 
-A simple, addictive tapper game with dark theme and red accents. Tap the crimson orb to gain power, buy upgrades, and climb the leaderboard.
+## How to Test
 
-### Features
-- Fully functional tapper gameplay
-- Upgrades system
-- Fake premium subscription unlock for enhanced multipliers
-- Local high score
-- Ready for App Store: Add real IAP with `in_app_purchase` package
+1. Clone the repo: `git clone https://github.com/Rmonty28/TheGrokApp.git`
+2. `cd TheGrokApp`
+3. `flutter pub get`
+4. `flutter run`
 
-### How to build and publish
-1. Clone the repo
-2. `flutter pub get`
-3. `flutter run` to test
-4. For iOS: `flutter build ios`
-5. Open in Xcode, configure signing, and submit to App Store Connect.
-
-Monetization: Freemium - small upfront or monthly sub for premium features.
-
-App is 100% functional as demo.
+## Build for App Store
+See Flutter docs.

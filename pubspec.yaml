@@ -1,5 +1,5 @@
-name: crimson_tapper
-description: Black/red themed idle tapper game for iOS and Android.
+name: the_grok_app
+description: Crimson Tapper - Idle Clicker
 
 publish_to: 'none'
 
@@ -11,7 +11,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  shared_preferences: ^2.3.0
+  shared_preferences: ^2.2.2
 
 flutter:
   uses-material-design: true
